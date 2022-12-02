@@ -52,7 +52,7 @@
       script: |
         with oc.project('newton-idracs'):
 
-          def print_phase(pod_apiobj):
+          def print_phase(deployment_apiobj):
             print('Phase for {} = {}'.format(deployment_apiobj.qname(), deployment_apiobj.model.status.phase))
 
           oc.selector({{deployments}}).for_each(print_phase)
