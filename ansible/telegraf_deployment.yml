@@ -9,14 +9,14 @@
 
   tasks:
 
-  - name: Set a fact to be used in script
+  - name: deploy latest changes
     set_fact:
-      op_types: "pods"
-
+      op_types: "deployments"
+      op_routes: "telegraf-newton/openshift.m1.shift.zone"
   - name: Await ingress
     openshift_client_python:
       # Default project scope unless overridden with oc.project
-      project: 'openshift-monitoring'
+      project: 'newton-idracs'
       # Timeout applies to overall script / all oc interactions must complete
       timeout: 15
       # If you know the script will make changes, you can indicate it as a parameter
@@ -31,14 +31,14 @@
 
         # "oc.ansible.new_facts" is a dict into which you can store new facts.
         # These facts will be set by ansible when the script exits.
-        oc.ansible.new_facts['pods'] = oc.selector("{{op_types}}").qnames()
+        oc.ansible.new_facts['deployments'] = oc.selector("{{op_types}}").qnames()
 
-        oc.selector('route/prometheus-k8s').until_all(1, oc.status.is_route_admitted)
+        oc.selector('route/"{{op_routes}}"').until_all(1, oc.status.is_route_admitted)
 
         # An alternate way of reporting a change occurred to the module.
         oc.ansible.changed = True
 
-        oc.selector('route/prometheus-k8s').until_all(1, oc.status.is_route_admitted)
+        oc.selector('route/"{{op_routes}}"').until_all(1, oc.status.is_route_admitted)
 
     register: result
 
@@ -50,10 +50,10 @@
     openshift_client_python:
       timeout: 60
       script: |
-        with oc.project('openshift-monitoring'):
+        with oc.project('newton-idracs'):
 
           def print_phase(pod_apiobj):
-            print('Phase for {} = {}'.format(pod_apiobj.qname(), pod_apiobj.model.status.phase))
+            print('Phase for {} = {}'.format(deployment_apiobj.qname(), deployment_apiobj.model.status.phase))
 
-          oc.selector({{pods}}).for_each(print_phase)
+          oc.selector({{deployments}}).for_each(print_phase)
 
